@@ -61,10 +61,7 @@ public class ApproveStepTest {
 
     final ResponseDataBuilder<Void> builder = ResponseData.builder();
     when(hubotServiceMock.sendMessage(any()))
-        .thenReturn(builder.successful(true).code(200).message("Success").build());
-
-    when(envVarsMock.get("HUBOT_URL")).thenReturn("http://localhost:9090/");
-    when(envVarsMock.get("BUILD_URL")).thenReturn("http://localhost:9090/hubot-testing/job/01");
+            .thenReturn(builder.successful(true).code(200).message("Success").build());
 
     when(contextMock.get(Run.class)).thenReturn(runMock);
     when(contextMock.get(TaskListener.class)).thenReturn(taskListenerMock);
@@ -78,6 +75,9 @@ public class ApproveStepTest {
 
   @Test
   public void testWithEmptyHubotURLThrowsAbortException() throws Exception {
+    when(envVarsMock.get("HUBOT_URL")).thenReturn("http://localhost:9090/");
+    when(envVarsMock.get("HUBOT_FAIL_ON_ERROR")).thenReturn(null);
+
     final ApproveStep step = new ApproveStep("message");
     step.setRoom("room");
     stepExecution = new ApproveStep.ApproveStepExecution(step, contextMock);
@@ -88,14 +88,17 @@ public class ApproveStepTest {
 
     // Execute and assert Test.
     assertThatExceptionOfType(AbortException.class).isThrownBy(() -> {
-      stepExecution.start();
-    }).withMessage("Hubot: HUBOT_URL or step parameter equivalent is empty or null.")
-        .withStackTraceContaining("AbortException")
-        .withNoCause();
+              stepExecution.start();
+            }).withMessage("Hubot: HUBOT_URL or step parameter equivalent is empty or null.")
+            .withStackTraceContaining("AbortException")
+            .withNoCause();
   }
 
   @Test
   public void testWithEmptyRoomThrowsAbortException() throws Exception {
+    when(envVarsMock.get("HUBOT_DEFAULT_ROOM")).thenReturn(null);
+    when(envVarsMock.get("HUBOT_FAIL_ON_ERROR")).thenReturn(null);
+
     final ApproveStep step = new ApproveStep("message");
     step.setUrl("http://localhost:9090/");
     stepExecution = new ApproveStep.ApproveStepExecution(step, contextMock);
@@ -103,14 +106,17 @@ public class ApproveStepTest {
 
     // Execute and assert Test.
     assertThatExceptionOfType(AbortException.class).isThrownBy(() -> {
-      stepExecution.start();
-    }).withMessage("Hubot: HUBOT_DEFAULT_ROOM or step parameter equivalent is empty or null.")
-        .withStackTraceContaining("AbortException")
-        .withNoCause();
+              stepExecution.start();
+            }).withMessage("Hubot: HUBOT_DEFAULT_ROOM or step parameter equivalent is empty or null.")
+            .withStackTraceContaining("AbortException")
+            .withNoCause();
   }
 
   @Test
   public void testWithEmptyMessageThrowsAbortException() throws Exception {
+    when(envVarsMock.get("HUBOT_URL")).thenReturn("http://localhost:9090/");
+    when(envVarsMock.get("BUILD_URL")).thenReturn("http://localhost:9090/hubot-testing/job/01");
+
     final ApproveStep step = new ApproveStep("");
     step.setRoom("");
     stepExecution = new ApproveStep.ApproveStepExecution(step, contextMock);
@@ -118,13 +124,17 @@ public class ApproveStepTest {
 
     // Execute and assert Test.
     assertThatExceptionOfType(AbortException.class).isThrownBy(() -> {
-      stepExecution.start();
-    }).withMessage("Hubot: Message is empty or null.").withStackTraceContaining("AbortException")
-        .withNoCause();
+              stepExecution.start();
+            }).withMessage("Hubot: Message is empty or null.").withStackTraceContaining("AbortException")
+            .withNoCause();
   }
 
   @Test
   public void testErrorMessageSend() throws Exception {
+    when(envVarsMock.get("HUBOT_URL")).thenReturn("http://localhost:9090/");
+    when(envVarsMock.get("HUBOT_FAIL_ON_ERROR")).thenReturn(null);
+    when(envVarsMock.get("CHANGE_AUTHOR")).thenReturn(null);
+
     final ApproveStep step = new ApproveStep("message");
     step.setRoom("room");
     stepExecution = new ApproveStep.ApproveStepExecution(step, contextMock);
@@ -132,7 +142,7 @@ public class ApproveStepTest {
 
     final ResponseDataBuilder<Void> builder = ResponseData.builder();
     when(hubotServiceMock.sendMessage(any()))
-        .thenReturn(builder.successful(false).code(400).error("fake error.").build());
+            .thenReturn(builder.successful(false).code(400).error("fake error.").build());
 
     // Assert Test
     assertThatExceptionOfType(AbortException.class).isThrownBy(() -> {
@@ -142,6 +152,9 @@ public class ApproveStepTest {
 
   @Test
   public void testFailOnErrorFalseDoesNotThrowsAbortException() throws Exception {
+    when(envVarsMock.get("HUBOT_URL")).thenReturn("http://localhost:9090/");
+    when(envVarsMock.get("HUBOT_DEFAULT_ROOM")).thenReturn(null);
+
     final ApproveStep step = new ApproveStep("message");
     step.setFailOnError("false");
     stepExecution = new ApproveStep.ApproveStepExecution(step, contextMock);
@@ -156,6 +169,10 @@ public class ApproveStepTest {
 
   @Test
   public void testSuccessfulMessageSend() throws Exception {
+    when(envVarsMock.get("HUBOT_URL")).thenReturn("http://localhost:9090/");
+    when(envVarsMock.get("HUBOT_FAIL_ON_ERROR")).thenReturn(null);
+    when(envVarsMock.get("CHANGE_AUTHOR")).thenReturn(null);
+
     final ApproveStep step = new ApproveStep("message");
     step.setRoom("room");
     stepExecution = new ApproveStep.ApproveStepExecution(step, contextMock);
@@ -163,9 +180,9 @@ public class ApproveStepTest {
 
     // Execute Test. TODO Mock InputStep too.
     assertThatExceptionOfType(AbortException.class).isThrownBy(() -> {
-      stepExecution.start();
-    }).withMessageStartingWith("Error while sending message:")
-        .withStackTraceContaining("AbortException").withNoCause();
+              stepExecution.start();
+            }).withMessageStartingWith("Error while sending message:")
+            .withStackTraceContaining("AbortException").withNoCause();
 
     // Assert Test
     verify(hubotServiceMock, times(1)).sendMessage(any());
